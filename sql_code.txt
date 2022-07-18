@@ -1,0 +1,305 @@
+SQL> drop sequence pur#_seq;
+
+Sequence dropped.
+
+SQL> create sequence pur#_seq
+  2  start with 10001
+  3  increment by 1
+  4  nocache
+  5  nocycle;
+
+Sequence created.
+
+SQL> drop sequence log#_seq;
+
+Sequence dropped.
+
+SQL> create sequence log#_seq
+  2  start with 1001
+  3  increment by 1
+  4  nocache
+  5  nocycle;
+
+Sequence created.
+
+SQL> create or replace package mypackage as
+  2  procedure show_employees ;
+  3  procedure show_customers;
+  4  procedure show_products;
+  5  procedure show_purchases;
+  6  procedure show_logs;
+  7  procedure purchases_made(customer_id in purchases.cid%type);
+  8  function number_customers(cust_pid purchases.pid%type) return number;
+  9  procedure add_customer(c_id in customers.cid%type, c_name in customers.name%type, c_telephone# in  customers.telephone#%type);
+ 10  procedure add_purchases(e_id in purchases.eid%type, p_id in purchases.pid%type, c_id in purchases.cid%type, pur_qty in purchases.qty%type,pur_unit_price in purchases.unit_price%type);
+ 11  end;
+ 12  /
+
+Package created.
+
+SQL> create or replace package body mypackage as
+  2  procedure show_employees is
+  3  e_id employees.eid%type;
+  4  e_name employees.name%type;
+  5  e_tel employees.telephone#%type;
+  6  e_mail employees.email%type;
+  7  cursor c is
+  8  select * from employees;
+  9  begin
+ 10  open c;
+ 11  loop
+ 12  fetch c into e_id,e_name,e_tel,e_mail;
+ 13  dbms_output.put_line(e_id||' '||e_name||' '||e_tel||' '||e_mail);
+ 14  exit when c%notfound;
+ 15  end loop;
+ 16  close c;
+ 17  end;
+ 18  procedure show_customers is
+ 19  c_id customers.cid%type;
+ 20   c_name customers.name%type;
+ 21  c_tel customers.telephone#%type;
+ 22  c_visits customers.visits_made%type;
+ 23  c_last customers.last_visit_date%type;
+ 24  cursor c is
+ 25  select * from customers;
+ 26  begin
+ 27  open c;
+ 28  loop
+ 29  fetch c into c_id,c_name,c_tel,c_visits,c_last;
+ 30  dbms_output.put_line(c_id||'  '||c_name||'  '||c_tel||'  '||c_visits||' '||c_last);
+ 31  exit when c%notfound;
+ 32  end loop;
+ 33  close c;
+ 34  end;
+ 35  procedure show_products is
+ 36   p_id products.pid%type;
+ 37  p_name products.name%type;
+ 38  p_qoh products.qoh%type;
+ 39  p_qoh_threshold products.qoh_threshold%type;
+ 40  p_r products.regular_price%type;
+ 41  p_disc products.discnt_rate%type;
+ 42  cursor c is
+ 43  select * from products;
+ 44  begin
+ 45  open c;
+ 46  loop
+ 47  fetch c into p_id,p_name,p_qoh,p_qoh_threshold,p_r,p_disc;
+ 48  dbms_output.put_line(p_id||' '||p_name||' '||p_qoh||' '||p_qoh_threshold||' '||p_r||' '||p_disc);
+ 49  exit when c%notfound;
+ 50  end loop;
+ 51  close c;
+ 52  end;
+ 53  procedure show_purchases is
+ 54  pur_id purchases.pur#%type;
+ 55  pur_eid purchases.eid%type;
+ 56  pur_pid purchases.pid%type;
+ 57  pur_cid purchases.cid%type;
+ 58  ppur_date purchases.pur_date%type;
+ 59  pur_qty purchases.qty%type;
+ 60  pur_unit_price purchases.unit_price%type;
+ 61  pur_total purchases.total%type;
+ 62  pur_savings  purchases.saving%type;
+ 63  cursor c is
+ 64  select * from purchases;
+ 65  begin
+ 66  open c;
+ 67  loop
+ 68  fetch c into pur_id,pur_eid,pur_pid,pur_cid,ppur_date,pur_qty,pur_unit_price,pur_total,pur_savings;
+ 69  dbms_output.put_line(pur_id||' '||pur_eid||' '||pur_pid||' '||pur_cid||' '||ppur_date||' '||pur_qty||' '||pur_unit_price||' '||pur_total||' '||pur_savings);
+ 70  exit when c%notfound;
+ 71  end loop;
+ 72  close c;
+ 73  end;
+ 74  procedure show_logs is
+ 75  log logs.log#%type;
+ 76  log_user_name logs.user_name%type;
+ 77  logs_operation logs.operation%type;
+ 78  logs_op_date logs.op_time%type;
+ 79  logs_table logs.table_name%type;
+ 80  ltuple logs.tuple_pkey%type;
+ 81  cursor c is
+ 82  select * from logs;
+ 83  begin
+ 84  open c;
+ 85  loop
+ 86  fetch c into log, log_user_name, logs_operation,logs_op_date, logs_table, ltuple;
+ 87  dbms_output.put_line(log||' '||log_user_name||' '||logs_operation||' '||logs_op_date||' '||logs_table||' '||ltuple);
+ 88  exit when c%notfound;
+ 89  end loop;
+ 90  close c;
+ 91  end;
+ 92  procedure purchases_made(customer_id in purchases.cid%type)is
+ 93  begin
+ 94  dbms_output.put_line('cid' || ' ,' || 'name' || ', ' || 'pid' ||', ' || 'pur_date' || ',' || 'qty' || ',' || 'unit_price' || ',' || 'total');
+ 95  for c in(select * from (select cid,name from customers c where cid=customer_id)a,(select pid,pur_date,qty,unit_price,total from purchases p where cid=customer_id)b)
+ 96  loop
+ 97  dbms_output.put_line(c.cid||','||c.name|| ',' ||c.pid ||',' || c.pur_date|| ',' ||c.qty || ',' ||c.unit_price || ',' ||c.total);
+ 98  end loop;
+ 99  end;
+100  function number_customers(cust_pid purchases.pid%type) return number is cust_num number;
+101  begin
+102  select count(cid) into cust_num from purchases where pid=cust_pid;
+103  return cust_num;
+104  end;
+105  procedure add_customer(c_id in customers.cid%type, c_name in customers.name%type, c_telephone# in  customers.telephone#%type) is
+106  begin
+107  insert into customers values (c_id, c_name, c_telephone#, 1, sysdate);
+108  end;
+109 procedure add_purchases(e_id in purchases.eid%type, p_id in purchases.pid%type, c_id in purchases.cid%type, pur_qty in purchases.qty%type,pur_unit_price in purchases.unit_price%type)is
+    pur_total purchases.total%type;
+     pur_saving purchases.saving%type;
+    product_qoh products.qoh%type;
+    product_qoh_thresh products.qoh%type;
+    temp_eid purchases.eid%type;
+     temp_cid purchases.cid%type;
+    temp_pid purchases.pid%type;
+    error_msg varchar2(1000);
+   begin
+   begin
+   select distinct eid into temp_eid from purchases where eid=e_id;
+   if(temp_eid!=e_id)then
+   error_msg:='INVALID EID IS GIVEN';
+   end if;
+    exception
+   when no_data_found then
+   RAISE_APPLICATION_ERROR(-20001,'INVALID EID IS GIVEN');
+   return;
+   end;
+   begin
+   select distinct  pid into temp_pid from purchases where pid=p_id;
+   if(temp_pid!=p_id)then
+    error_msg:='INVALID PID IS GIVEN';
+   end if;
+   exception
+   when no_data_found then
+   RAISE_APPLICATION_ERROR(-20002,'INVALID PID IS GIVEN');
+   return;
+   end;
+   begin
+   select distinct cid into temp_cid from purchases where cid=c_id;
+   if(temp_cid!=c_id)then
+   error_msg:='INVALID CID IS GIVEN';
+   end if;
+   exception
+    when no_data_found then
+   RAISE_APPLICATION_ERROR(-20003,'INVALID CID IS GIVEN');
+   return;
+   end;
+   select qoh into product_qoh from products where pid=p_id;
+   select p.qty*(pr.regular_price-p.unit_price) into pur_saving from purchases p,products pr where p.pid=p_id and  p.pid=pr.pid;
+   select qoh_threshold into product_qoh_thresh from products where pid=p_id;
+   if(pur_qty>product_qoh)then
+   dbms_output.put_line('Insufficient quantity in stock');
+   else
+   insert into purchases values(pur#_seq.nextval,e_id,p_id,c_id,sysdate,pur_qty,pur_unit_price,pur_qty*pur_unit_price,pur_saving);
+   end if;
+   if(product_qoh<product_qoh_thresh)then
+   dbms_output.put_line('new supply required');
+   product_qoh:=product_qoh_thresh+10;
+   update products set qoh=product_qoh where pid=p_id;
+   dbms_output.put_line('the new qoh is'||product_qoh);
+   end if;
+   end;
+   /
+
+
+Package body created.
+
+SQL> create or replace trigger qoh
+  2  after update of qoh on products
+  3  for each row
+  4  when (new.qoh < old.qoh_threshold)
+  5  begin
+  6  dbms_output.put_line('The current qoh of the product is below the required threshold and new supply is required.');
+  7  end;
+  8  /
+
+Trigger created.
+
+SQL> create or replace trigger qoh_update
+  2  after insert on purchases
+  3  for each row
+  4  declare
+  5  pro_qty number;
+  6  begin
+  7  select qty into pro_qty from purchases where pid=:new.pid;
+  8  update products set qoh=qoh-pro_qty where pid=:new.pid;
+  9  end;
+ 10  /
+
+Trigger created.
+
+SQL> create or replace trigger qoh_after_update
+  2  after update of qoh on products
+  3  for each row
+  4  begin
+  5  dbms_output.put_line('The new Qoh is'||' '||:new.qoh);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger visitsmade
+  2  after insert on purchases
+  3  for each row
+  4  begin
+  5  update customers set visits_made=visits_made+1,last_visit_date=sysdate where cid=:new.cid;
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger customers_insert
+  2  after insert on customers
+  3  for each row
+  4  begin
+  5  insert into logs values(log#_seq.nextval,user,'insert',sysdate,'customers',:new.cid);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger customers_update_last_visit
+  2  after update of last_visit_date on customers
+  3  for each row
+  4  begin
+  5  insert into logs values(log#_seq.nextval,user,'update',sysdate,'customers',:old.cid);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger customers_update_vists_made
+  2  after update of visits_made on customers
+  3  for each row
+  4  begin
+  5  insert into logs values(log#_seq.nextval,user,'update',sysdate,'customers',:old.cid);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger purchases_insert
+  2  after insert on purchases
+  3  for each row
+  4  begin
+  5  insert into logs values(log#_seq.nextval,user,'insert',sysdate,'purchases',:new.pur#);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> create or replace trigger products_update
+  2  after update of qoh on products
+  3  for each row
+  4  begin
+  5  insert into logs values(log#_seq.nextval,user,'update',sysdate,'products',:old.pid);
+  6  end;
+  7  /
+
+Trigger created.
+
+SQL> 
+SQL> 
+SQL> 
+SQL> spool off
